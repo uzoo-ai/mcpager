@@ -81,10 +81,14 @@ class LangGraphBackend(BackendAdapter):
 
         ArgsModel = create_model(f"{tool_name}_Args", **fields)
 
+        partial_tool_fn = partial(self.call_tool, session, tool_name)
+        # this is required for LangGraph to get type hints of a tool
+        partial_tool_fn.__annotations__ = partial_tool_fn.func.__annotations__
+
         return StructuredTool(
             name=tool_name,
             description=description,
             args_schema=ArgsModel,
-            func=partial(self.call_tool, session, tool_name),
+            func=partial_tool_fn,
             response_format="content_and_artifact",
         )
