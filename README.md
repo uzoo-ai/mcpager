@@ -52,7 +52,7 @@ pip install mcpager
 For example, using FastMCP:
 
 ```bash
-fastmcp serve examples/echo_server.py --transport http
+fastmcp run examples/echo_server.py --transport http
 ```
 
 2. Connect using MCPager
@@ -84,16 +84,22 @@ print(result)
 MCPager can expose MCP tools directly to LangGraph agents.
 
 ```python
-from langgraph.prebuilt import create_react_agent
-from langchain_openai import ChatOpenAI
-from mcpager.langgraph import load_mcp_tools
+from mcpager.client import StdioTransport, HttpTransport, Session, MCPClient
+from mcpager.adapters import LangGraphBackend
 
-llm = ChatOpenAI(model="gpt-4o-mini")
-tools = load_mcp_tools(client)
+transport = HttpTransport('http://localhost:8000/mcp')
+# or you can use StdioTransport for local testing like this:
+# transport = StdioTransport(["fastmcp", "run", "echo_server.py"])
+session = Session(transport)
+backend = LangGraphBackend()
+client = MCPClient(backend, session)
 
-agent = create_react_agent(llm, tools)
+client.initialize()
 
-result = agent.invoke({"messages": [("human", "Echo: MCP is working!")]})
+tools = client.list_tools()
+print(tools)
+
+result = client.call_tool("echo", text="Hello from MCPager!")
 print(result)
 ```
 Your MCP tools are now callable by the agent as native LangGraph tools.
